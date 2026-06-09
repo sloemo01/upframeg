@@ -43,7 +43,7 @@ With UpFrameG, you can upscale low-resolution render sequences, increase frame r
 ## Installation
 
 1. **Download the Addon**:
-   - Download the latest `upframeg.zip` from the [Releases](https://github.com/) page.
+   - Download the latest `upframeg.zip` from the [Releases](https://github.com/sloemo01/upframeg/releases/tag/v1.0.0) page.
 2. **Install in Blender**:
    - Open Blender.
    - Go to `Edit > Preferences > Addons`.
