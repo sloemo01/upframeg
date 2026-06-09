@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Blender temporary files
+*.blend1
+*.blend2
+
+# Local testing binaries
+ai_binaries/
+
+# Packaging outputs
+*.zip
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
