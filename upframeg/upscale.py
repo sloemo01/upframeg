@@ -41,7 +41,8 @@ def run_upscale_pass(cmd, start_progress, progress_scale, missing_frames, total_
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            startupinfo=startupinfo
+            startupinfo=startupinfo,
+            cwd=os.path.dirname(cmd[0])
         )
     except Exception as e:
         state.error_message = f"Failed to start Real-ESRGAN subprocess: {str(e)}"

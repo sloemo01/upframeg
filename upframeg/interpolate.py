@@ -56,7 +56,8 @@ def run_interpolate_pass(cmd, start_progress, progress_scale, remaining_interval
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            startupinfo=startupinfo
+            startupinfo=startupinfo,
+            cwd=os.path.dirname(cmd[0])
         )
     except Exception as e:
         state.error_message = f"Failed to start RIFE subprocess: {str(e)}"

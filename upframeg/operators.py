@@ -15,29 +15,42 @@ from .interpolate import run_interpolate
 from .encode import run_encode
 from .preferences import get_addon_name
 
-# PowerShell Balloon Toast Notification Helper
+# OS Balloon Toast Notification Helper
 def show_toast_notification(title, message):
-    escaped_title = title.replace("'", "''")
-    escaped_message = message.replace("'", "''")
-    
-    ps_script = f"""
-    [void] [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-    $notification = New-Object System.Windows.Forms.NotifyIcon
-    $notification.Icon = [System.Drawing.SystemIcons]::Information
-    $notification.BalloonTipTitle = '{escaped_title}'
-    $notification.BalloonTipText = '{escaped_message}'
-    $notification.Visible = $true
-    $notification.ShowBalloonTip(5000)
-    """
-    try:
-        subprocess.Popen(
-            ["powershell", "-NoProfile", "-Command", ps_script],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-        )
-    except Exception as e:
-        print(f"Failed to show OS notification: {e}")
+    import sys
+    if os.name == 'nt':
+        escaped_title = title.replace("'", "''")
+        escaped_message = message.replace("'", "''")
+        ps_script = f"""
+        [void] [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
+        $notification = New-Object System.Windows.Forms.NotifyIcon
+        $notification.Icon = [System.Drawing.SystemIcons]::Information
+        $notification.BalloonTipTitle = '{escaped_title}'
+        $notification.BalloonTipText = '{escaped_message}'
+        $notification.Visible = $true
+        $notification.ShowBalloonTip(5000)
+        """
+        try:
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            )
+        except Exception as e:
+            print(f"Failed to show OS notification: {e}")
+    elif sys.platform.startswith("darwin"):
+        escaped_title = title.replace('"', '\\"')
+        escaped_message = message.replace('"', '\\"')
+        as_script = f'display notification "{escaped_message}" with title "{escaped_title}"'
+        try:
+            subprocess.Popen(
+                ["osascript", "-e", as_script],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+        except Exception as e:
+            print(f"Failed to show macOS notification: {e}")
 
 # Binary Downloader State
 class AIPostDownloadState:
@@ -64,11 +77,20 @@ def download_binary_thread(binary_types, target_dir):
     _download_state.progress = 0.0
     _download_state.found_paths = {}
     
-    urls = {
-        'realesrgan': "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
-        'rife': "https://github.com/nihui/rife-ncnn-vulkan/releases/download/20221029/rife-ncnn-vulkan-20221029-windows.zip",
-        'ffmpeg': "https://github.com/GyanD/codexffmpeg/releases/download/8.1.1/ffmpeg-8.1.1-essentials_build.zip"
-    }
+    import sys
+    is_mac = sys.platform.startswith("darwin")
+    if is_mac:
+        urls = {
+            'realesrgan': "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-macos.zip",
+            'rife': "https://github.com/nihui/rife-ncnn-vulkan/releases/download/20221029/rife-ncnn-vulkan-20221029-macos.zip",
+            'ffmpeg': "https://evermeet.cx/ffmpeg/getrelease/zip"
+        }
+    else:
+        urls = {
+            'realesrgan': "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
+            'rife': "https://github.com/nihui/rife-ncnn-vulkan/releases/download/20221029/rife-ncnn-vulkan-20221029-windows.zip",
+            'ffmpeg': "https://github.com/GyanD/codexffmpeg/releases/download/8.1.1/ffmpeg-8.1.1-essentials_build.zip"
+        }
     
     total_types = len(binary_types)
     
@@ -124,10 +146,12 @@ def download_binary_thread(binary_types, target_dir):
             except Exception:
                 pass
                 
+            import sys
+            is_win = sys.platform.startswith("win")
             exec_name = {
-                'realesrgan': "realesrgan-ncnn-vulkan.exe",
-                'rife': "rife-ncnn-vulkan.exe",
-                'ffmpeg': "ffmpeg.exe"
+                'realesrgan': "realesrgan-ncnn-vulkan.exe" if is_win else "realesrgan-ncnn-vulkan",
+                'rife': "rife-ncnn-vulkan.exe" if is_win else "rife-ncnn-vulkan",
+                'ffmpeg': "ffmpeg.exe" if is_win else "ffmpeg"
             }[binary_type]
             
             found_path = None
@@ -137,6 +161,20 @@ def download_binary_thread(binary_types, target_dir):
                     break
                     
             if found_path:
+                if not is_win:
+                    try:
+                        import stat
+                        st = os.stat(found_path)
+                        os.chmod(found_path, st.st_mode | stat.S_IEXEC)
+                    except Exception as perm_err:
+                        print(f"[UpFrameG] Warning: Could not set execute permission on {found_path}: {perm_err}")
+                    
+                    if sys.platform.startswith("darwin"):
+                        try:
+                            # Remove macOS Gatekeeper quarantine flag to run binary automatically
+                            subprocess.run(["xattr", "-d", "com.apple.quarantine", found_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except Exception as xattr_err:
+                            print(f"[UpFrameG] Warning: Could not clear macOS quarantine attribute: {xattr_err}")
                 _download_state.found_paths[binary_type] = found_path
                 _download_state.found_path = found_path
             else:
