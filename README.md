@@ -1,5 +1,10 @@
 # UpFrameG
 
+<p align="center">
+  <img src="screenshots/sidebar_ui.jpg" alt="UpFrameG Sidebar UI" width="280"/>
+</p>
+
+
 **UpFrameG** is a powerful, portable, and fully asynchronous AI Post-Processing addon for Blender. It integrates state-of-the-art AI upscaling (Real-ESRGAN) and frame interpolation (RIFE) with high-efficiency video encoding (FFmpeg) directly inside Blender's interface.
 
 With UpFrameG, you can upscale low-resolution render sequences, increase frame rates (or create ultra-smooth slow-motion), apply advanced temporal filters, and compile final videos without leaving Blender.
